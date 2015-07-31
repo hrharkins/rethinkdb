@@ -405,6 +405,8 @@ private:
             args->optarg(env, "include_initial_vals");
 
         scoped_ptr_t<val_t> v = args->arg(env, 0);
+        configured_limits_t limits
+            = env->env->limits(args->optarg(env, "changefeed_queue_size"));
         if (v->get_type().is_convertible(val_t::type_t::SEQUENCE)) {
             counted_t<datum_stream_t> seq = v->as_seq(env->env);
             std::vector<counted_t<datum_stream_t> > streams;
@@ -424,6 +426,7 @@ private:
                         env->env,
                         include_initial_vals ? std::move(changespec.stream)
                                              : counted_t<datum_stream_t>(),
+                        limits,
                         squash,
                         include_states,
                         std::move(changespec.keyspec.spec),
@@ -448,7 +451,10 @@ private:
             return new_val(
                 env->env,
                 v->as_single_selection()->read_changes(
-                    include_initial_vals, squash, include_states));
+                    include_initial_vals,
+                    limits,
+                    squash,
+                    include_states));
         }
         auto selection = v->as_selection(env->env);
         rfail(base_exc_t::LOGIC,
